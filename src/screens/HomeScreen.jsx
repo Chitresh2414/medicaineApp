@@ -11,14 +11,14 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { format } from "date-fns";
-import { useSelector, useDispatch } from "react-redux"; // Hook into Redux
+import { useSelector, useDispatch } from "react-redux";
 
-// Central theme and utilities
+// Theme & Utilities
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import { getGreeting, getCurrentMonthYear } from "../utils/timeHelper";
 import { getDynamicWeek } from "../utils/calendarHelper";
 
-// Sub-components
+// Modular Sub-components
 import DateCard from "../components/DateCard";
 import IntakeTracker from "../components/IntakeTracker";
 import MedicineItem from "../components/MedicineItem";
@@ -26,40 +26,54 @@ import MedicineItem from "../components/MedicineItem";
 const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
-  // 1. Pull data from Redux Store
-  const medicines = useSelector((state) => state.intakes.medicines);
-  const user = useSelector((state) => state.user);
+  // 1. Redux State Connection
+  // Ye array Redux store se aata hai. Jab aap nayi dawai add karenge, ye auto-update hoga.
+  const medicines = useSelector((state) => state.intakes?.medicines || []);
+  const user = useSelector(
+    (state) =>
+      state.user || { name: "User", profileLetter: "U", location: "Udaipur" },
+  );
 
-  // 2. Dynamic Calendar Logic
+  // 2. Dynamic Calendar & Progress Logic
   const days = useMemo(() => getDynamicWeek(new Date()), []);
-
-  // 3. Dynamic progress calculation
   const completedCount = medicines.filter((m) => m.completed).length;
   const totalCount = medicines.length;
   const currentDayName = format(new Date(), "EEEE");
 
-  // 4. Dispatch Redux Action to toggle completion
-  const handleMarkAsDone = useCallback((id) => {
-    dispatch({ type: 'TOGGLE_COMPLETION', payload: id });
-  }, [dispatch]);
+  // 3. Action Handlers
+  const handleMarkAsDone = useCallback(
+    (id) => {
+      dispatch({ type: "TOGGLE_COMPLETION", payload: id });
+    },
+    [dispatch],
+  );
 
   const handleAddPress = useCallback(() => {
-    navigation.navigate("AddMedicine");
+    navigation.navigate("AddMedicine", { type: "Add" });
   }, [navigation]);
+
+  const handleProfilePress = () => {
+    navigation.navigate("Profile");
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* Header Section - Now using Redux user data */}
+      {/* HEADER: Dynamic Greeting & User Info */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.welcomeText}>{getGreeting()}, {user.name}!</Text>
-          <Text style={styles.subWelcome}>Stay healthy today in {user.location}</Text>
+          <Text style={styles.welcomeText}>
+            {getGreeting()}, {user.name}!
+          </Text>
+          <Text style={styles.subWelcome}>
+            Stay healthy today in {user.location}
+          </Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.profileBadge, SHADOWS.small]}
-          onPress={() => navigation.navigate("Profile")}
+          onPress={handleProfilePress}
+          activeOpacity={0.8}
         >
           <Text style={styles.profileLetter}>{user.profileLetter}</Text>
         </TouchableOpacity>
@@ -69,7 +83,7 @@ const HomeScreen = ({ navigation }) => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollPadding}
       >
-        {/* Calendar Section */}
+        {/* SECTION: Calendar */}
         <View style={styles.calendarContainer}>
           <Text style={styles.monthLabel}>{getCurrentMonthYear()}</Text>
           <FlatList
@@ -79,48 +93,63 @@ const HomeScreen = ({ navigation }) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.calendarList}
             renderItem={({ item }) => (
-              <DateCard 
-                date={item.date} 
-                day={item.day} 
-                active={item.active} 
-              />
+              <DateCard date={item.date} day={item.day} active={item.active} />
             )}
           />
         </View>
 
-        {/* Progress Tracker Section */}
+        {/* SECTION: Progress Ring */}
         <View style={styles.trackerWrapper}>
-          <IntakeTracker 
-            current={completedCount} 
-            total={totalCount} 
-            day={currentDayName} 
+          <IntakeTracker
+            current={completedCount}
+            total={totalCount}
+            day={currentDayName}
           />
         </View>
 
-        {/* Medicine List Section */}
+        {/* SECTION: Upcoming Doses */}
         <View style={styles.listContainer}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Doses</Text>
-            <TouchableOpacity onPress={() => navigation.navigate("History")}>
-              <Text style={styles.seeAll}>History</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 15 }}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("ExpiryScanner")}
+              >
+                <Text style={[styles.seeAll, { color: "#F59E0B" }]}>
+                  Scan Expiry
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate("History")}>
+                <Text style={styles.seeAll}>History</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
+          {/* Conditional Rendering based on Redux Data */}
           {medicines.length > 0 ? (
             medicines.map((med) => (
               <MedicineItem
                 key={med.id}
-                {...med}
+                name={med.name}
+                dose={med.dose}
+                time={med.reminder}
+                iconName={med.type} // ✅ correct mapping
+                completed={med.completed}
                 onPress={() => handleMarkAsDone(med.id)}
               />
             ))
           ) : (
-            <Text style={styles.emptyText}>No medicines scheduled for today.</Text>
+            <View style={styles.emptyState}>
+              <Feather name="coffee" size={40} color={COLORS.border} />
+              <Text style={styles.emptyStateText}>
+                Your schedule is clear today.
+              </Text>
+            </View>
           )}
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* FLOATING ACTION BUTTON (FAB) */}
       <TouchableOpacity
         style={[styles.fab, SHADOWS.medium]}
         onPress={handleAddPress}
@@ -132,6 +161,7 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
+// Clean, modular styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
@@ -176,11 +206,21 @@ const styles = StyleSheet.create({
   sectionTitle: { ...FONTS.bold, fontSize: 20, color: COLORS.primaryDark },
   seeAll: { ...FONTS.medium, color: COLORS.primary, fontSize: 14 },
   listContainer: { paddingHorizontal: SPACING.l },
-  emptyText: { 
-    ...FONTS.regular, 
-    textAlign: 'center', 
-    color: COLORS.textSub, 
-    marginTop: 20 
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: 10,
+  },
+  emptyStateText: {
+    ...FONTS.regular,
+    color: COLORS.textSub,
+    marginTop: 12,
+    fontSize: 15,
   },
   scrollPadding: { paddingBottom: 120 },
   fab: {

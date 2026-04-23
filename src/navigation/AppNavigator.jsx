@@ -3,38 +3,49 @@ import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/
 
 // Screens
 import LoginScreen from '../screens/LoginScreen';
-// Fixed typo: 'SingnUp' -> 'SignUp' (Double check your filename!)
 import SignUpScreen from '../screens/SignUpScreen'; 
 import HomeScreen from '../screens/HomeScreen';
+import ProfileScreen from '../screens/ProfileScreen'; // New Import
+import AddMedicineScreen from '../screens/AddMedicineScreen';
+import HistoryScreen from '../screens/HistoryScreen';
+import ExpiryScannerScreen from '../screens/ExpiryScannerScreen';
 
 const Stack = createStackNavigator();
 
-/**
- * AppNavigator handles the navigation flow.
- * Default starting point is the Login screen.
- */
 const AppNavigator = () => (
   <Stack.Navigator 
     initialRouteName="Login"
     screenOptions={{ 
       headerShown: false,
-      // Provides that premium, smooth slide effect between screens
       cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS 
     }}
   >
-    {/* Auth Flow */}
+    {/* Auth Flow: Users start here */}
     <Stack.Screen name="Login" component={LoginScreen}/> 
     <Stack.Screen name="SignUp" component={SignUpScreen} />
     
-    {/* Main App Flow */}
+    {/* Main App Flow: Users land here after Login */}
     <Stack.Screen 
       name="Home" 
       component={HomeScreen} 
+      options={{ gestureEnabled: false }} // Safety: Prevent sliding back to Login
+    />
+
+    {/* Profile Flow: Opened from the Home header */}
+    <Stack.Screen 
+      name="Profile" 
+      component={ProfileScreen} 
       options={{
-        // Disables swipe back to login after entering the app
-        gestureEnabled: false 
+        headerShown: true, // Show header so user can see "Profile" title
+        headerTitle: "My Profile",
+        headerBackTitleVisible: false,
+        headerStyle: { backgroundColor: '#F8FAFC' }, // Match your background
+        headerTitleStyle: { fontFamily: 'Montserrat-Bold', fontSize: 18 },
       }}
     />
+    <Stack.Screen name="AddMedicine" component={AddMedicineScreen} />
+    <Stack.Screen name="History" component={HistoryScreen} />
+    <Stack.Screen name="ExpiryScanner" component={ExpiryScannerScreen} />
   </Stack.Navigator>
 );
 

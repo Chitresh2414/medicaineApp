@@ -7,12 +7,17 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useDispatch } from "react-redux"; // Connect to Redux
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
 
 const SignUpScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  
+  // Form State
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -20,13 +25,39 @@ const SignUpScreen = ({ navigation }) => {
     confirm: "",
   });
 
+  // UI State for password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const handleSignUp = () => {
-    if (formData.password !== formData.confirm) {
-      alert("Passwords do not match!");
+    const { name, email, password, confirm } = formData;
+
+    // Basic Validation
+    if (!name || !email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
       return;
     }
-    // Success: navigate to Home
-    navigation.replace("Home");
+
+    if (password !== confirm) {
+      Alert.alert("Mismatch", "Passwords do not match!");
+      return;
+    }
+
+    // 1. Dispatch to Redux (Update the 'Chinku' profile globally)
+    dispatch({ 
+      type: 'UPDATE_PROFILE', 
+      payload: { 
+        name: name, 
+        profileLetter: name.charAt(0).toUpperCase(),
+        location: "Udaipur, IN" 
+      } 
+    });
+
+    // 2. Success Navigation (Reset stack to Home)
+    navigation.reset({
+      index: 0,
+      routes: [{ name: "Home" }],
+    });
   };
 
   return (
@@ -52,25 +83,36 @@ const SignUpScreen = ({ navigation }) => {
             <AppInput
               icon="account-outline"
               placeholder="Your Name"
+              value={formData.name}
               onChangeText={(val) => setFormData({ ...formData, name: val })}
             />
+            
             <AppInput
               icon="email-outline"
               placeholder="Your Email"
               keyboardType="email-address"
               autoCapitalize="none"
+              value={formData.email}
               onChangeText={(val) => setFormData({ ...formData, email: val })}
             />
+            
             <AppInput
               icon="lock-outline"
               placeholder="Your Password"
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              rightIcon={showPassword ? "eye-off" : "eye"}
+              onRightIconPress={() => setShowPassword(!showPassword)}
+              value={formData.password}
               onChangeText={(val) => setFormData({ ...formData, password: val })}
             />
+            
             <AppInput
               icon="lock-check-outline"
               placeholder="Confirm Password"
-              secureTextEntry
+              secureTextEntry={!showConfirm}
+              rightIcon={showConfirm ? "eye-off" : "eye"}
+              onRightIconPress={() => setShowConfirm(!showConfirm)}
+              value={formData.confirm}
               onChangeText={(val) => setFormData({ ...formData, confirm: val })}
             />
           </View>
@@ -83,7 +125,7 @@ const SignUpScreen = ({ navigation }) => {
             <Text style={styles.buttonText}>Sign up</Text>
           </TouchableOpacity>
 
-          {/* Footer - Fixed Layout */}
+          {/* Footer - Social Login or Back to Login */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate("Login")}>
@@ -137,7 +179,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   footer: {
-    flexDirection: "row", // Ensures text and link are side-by-side
+    flexDirection: "row",
     marginTop: SPACING.xl,
     justifyContent: "center",
     alignItems: "center",

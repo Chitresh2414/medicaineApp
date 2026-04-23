@@ -1,20 +1,20 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { formatTo12Hour } from '../utils/timeHelper';
+import { getMedicineIcon } from '../constants/iconsmap'
 
-// Added default values in destructuring for robustness
 const MedicineItem = memo(({ 
   name = "Unnamed Medicine", 
   dose = "Dosage not set", 
   time = new Date(), 
-  iconName = 'pill', 
+  iconName = "other", 
   completed = false, 
   onPress 
 }) => {
   
-  // Clean Code: Move style logic to variables for readability
   const statusColor = completed ? COLORS.primary : COLORS.border;
   const tagBackground = completed ? COLORS.primaryLight : '#F1F5F9';
   const textColor = completed ? COLORS.primary : COLORS.primaryDark;
@@ -24,18 +24,18 @@ const MedicineItem = memo(({
       style={[styles.card, completed && styles.completedCard]}
       activeOpacity={0.7}
       onPress={onPress}
-      disabled={!onPress} // Disable feedback if no action is provided
+      disabled={!onPress}
     >
-      {/* Left: Status Checkbox */}
+      {/* LEFT: STATUS ICON */}
       <View style={styles.iconContainer}>
-         <MaterialCommunityIcons 
-           name={completed ? "check-circle" : "circle-outline"} 
-           size={26} 
-           color={statusColor} 
-         />
+        <MaterialCommunityIcons 
+          name={completed ? "check-circle" : "circle-outline"} 
+          size={26} 
+          color={statusColor} 
+        />
       </View>
       
-      {/* Middle: Name & Dose */}
+      {/* MIDDLE: TEXT INFO */}
       <View style={styles.info}>
         <Text 
           numberOfLines={1} 
@@ -43,19 +43,23 @@ const MedicineItem = memo(({
         >
           {name}
         </Text>
+
         <Text style={styles.dose}>{dose}</Text>
       </View>
 
-      {/* Right: Time Tag & Type Icon */}
+      {/* RIGHT: TIME + TYPE ICON */}
       <View style={styles.rightSection}>
+        
+        {/* TIME TAG */}
         <View style={[styles.timeTag, { backgroundColor: tagBackground }]}>
           <Text style={[styles.timeText, { color: textColor }]}>
             {formatTo12Hour(time)}
           </Text>
         </View>
-        
+
+        {/* TYPE ICON */}
         <MaterialCommunityIcons 
-          name={iconName} 
+          name={getMedicineIcon(iconName)} 
           size={22} 
           color={completed ? COLORS.primary : COLORS.textSub} 
         />
@@ -78,37 +82,50 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
+
   completedCard: {
     opacity: 0.7,
     backgroundColor: '#F8FAFC',
   },
-  iconContainer: { marginRight: SPACING.m },
-  info: { flex: 1 },
+
+  iconContainer: { 
+    marginRight: SPACING.m 
+  },
+
+  info: { 
+    flex: 1 
+  },
+
   name: { 
     ...FONTS.bold, 
     fontSize: 17, 
     color: COLORS.primaryDark, 
   },
+
   completedText: {
     textDecorationLine: 'line-through',
     color: COLORS.textSub,
   },
+
   dose: { 
     ...FONTS.regular, 
     fontSize: 13, 
     color: COLORS.textSub,
     marginTop: 2,
   },
+
   rightSection: { 
     flexDirection: 'row', 
     alignItems: 'center' 
   },
+
   timeTag: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
     marginRight: 8,
   },
+
   timeText: { 
     ...FONTS.bold, 
     fontSize: 12,

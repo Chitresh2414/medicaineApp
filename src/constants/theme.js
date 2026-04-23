@@ -1,4 +1,4 @@
-// constants/theme.js
+// File: src/constants/theme.js
 
 export const COLORS = {
   // A cleaner, softer off-white for the background
