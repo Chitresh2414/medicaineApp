@@ -27,7 +27,6 @@ const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
 
   // 1. Redux State Connection
-  // Ye array Redux store se aata hai. Jab aap nayi dawai add karenge, ye auto-update hoga.
   const medicines = useSelector((state) => state.intakes?.medicines || []);
   const user = useSelector(
     (state) =>
@@ -52,8 +51,11 @@ const HomeScreen = ({ navigation }) => {
     navigation.navigate("AddMedicine", { type: "Add" });
   }, [navigation]);
 
-  const handleProfilePress = () => {
-    navigation.navigate("Profile");
+  const handleEditPress = (medicine) => {
+    navigation.navigate("AddMedicine", { 
+      type: "Edit", 
+      pressedIntake: medicine 
+    });
   };
 
   return (
@@ -72,7 +74,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity
           style={[styles.profileBadge, SHADOWS.small]}
-          onPress={handleProfilePress}
+          onPress={() => navigation.navigate("Profile")}
           activeOpacity={0.8}
         >
           <Text style={styles.profileLetter}>{user.profileLetter}</Text>
@@ -112,12 +114,8 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Doses</Text>
             <View style={{ flexDirection: "row", gap: 15 }}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("ExpiryScanner")}
-              >
-                <Text style={[styles.seeAll, { color: "#F59E0B" }]}>
-                  Scan Expiry
-                </Text>
+              <TouchableOpacity onPress={() => navigation.navigate("ExpiryScanner")}>
+                <Text style={[styles.seeAll, { color: "#F59E0B" }]}>Scan Expiry</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.navigate("History")}>
                 <Text style={styles.seeAll}>History</Text>
@@ -125,7 +123,7 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Conditional Rendering based on Redux Data */}
+          {/* Medicine List with Edit capability */}
           {medicines.length > 0 ? (
             medicines.map((med) => (
               <MedicineItem
@@ -133,23 +131,22 @@ const HomeScreen = ({ navigation }) => {
                 name={med.name}
                 dose={med.dose}
                 time={med.reminder}
-                iconName={med.type} // ✅ correct mapping
+                iconName={med.type}
                 completed={med.completed}
                 onPress={() => handleMarkAsDone(med.id)}
+                onLongPress={() => handleEditPress(med)} // Long press to Edit/Delete
               />
             ))
           ) : (
             <View style={styles.emptyState}>
               <Feather name="coffee" size={40} color={COLORS.border} />
-              <Text style={styles.emptyStateText}>
-                Your schedule is clear today.
-              </Text>
+              <Text style={styles.emptyStateText}>Your schedule is clear today.</Text>
             </View>
           )}
         </View>
       </ScrollView>
 
-      {/* FLOATING ACTION BUTTON (FAB) */}
+      {/* FLOATING ACTION BUTTON */}
       <TouchableOpacity
         style={[styles.fab, SHADOWS.medium]}
         onPress={handleAddPress}
@@ -161,7 +158,6 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
-// Clean, modular styles
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   header: {
@@ -216,12 +212,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginTop: 10,
   },
-  emptyStateText: {
-    ...FONTS.regular,
-    color: COLORS.textSub,
-    marginTop: 12,
-    fontSize: 15,
-  },
+  emptyStateText: { ...FONTS.regular, color: COLORS.textSub, marginTop: 12, fontSize: 15 },
   scrollPadding: { paddingBottom: 120 },
   fab: {
     position: "absolute",

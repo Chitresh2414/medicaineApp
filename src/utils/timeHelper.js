@@ -1,62 +1,106 @@
-/**
- * timeHelper.js
- * Utilities for time manipulation and Indian Standard Time (IST) 
- */
+// src/utils/timeHelper.js
 
-/**
- * Returns the fixed Indian Standard Time offset
- * @returns {string} 
- */
-export const getIndiaOffset = () => "UTC+5:30";
+// ==============================
+// CONSTANTS
+// ==============================
+const IST_LOCALE = "en-IN";
 
-/**
- * Formats a raw date or string into a 12-hour AM/PM format
- * Example: 2026-04-22T16:30:00 -> "04:30 PM"
- * @param {Date|string} date 
- * @returns {string}
- */
-export const formatTo12Hour = (date) => {
-  if (!date) return "";
-  const d = new Date(date);
-  return d.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  }).toUpperCase();
+// ==============================
+// HELPERS
+// ==============================
+
+const parseTimeString = (timeString) => {
+  if (!timeString) return null;
+
+  try {
+    let hours, minutes;
+
+    if (/AM|PM/i.test(timeString)) {
+      // 12-hour format
+      const [time, modifierRaw] = timeString.trim().split(" ");
+      const modifier = modifierRaw?.toUpperCase();
+
+      let [h, m] = time.split(":").map(Number);
+
+      if (modifier === "PM" && h < 12) h += 12;
+      if (modifier === "AM" && h === 12) h = 0;
+
+      hours = h;
+      minutes = m;
+    } else {
+      // 24-hour format
+      const [h, m] = timeString.split(":").map(Number);
+      hours = h;
+      minutes = m;
+    }
+
+    if (isNaN(hours) || isNaN(minutes)) return null;
+
+    return { hours, minutes };
+  } catch {
+    return null;
+  }
 };
 
-/**
- * Returns a greeting based on the current time in Udaipur
- * @returns {string} - Good Morning, Afternoon, or Evening
- */
+// ==============================
+// FORMAT TIME
+// ==============================
+export const formatTo12Hour = (date) => {
+  if (!date) return "";
+
+  // Already formatted
+  if (typeof date === "string" && /\d{1,2}:\d{2}\s?(AM|PM)/i.test(date)) {
+    return date.toUpperCase();
+  }
+
+  const d = new Date(date);
+  if (isNaN(d)) return String(date);
+
+  return d
+    .toLocaleTimeString(IST_LOCALE, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .toUpperCase();
+};
+
+// ==============================
+// GREETING
+// ==============================
 export const getGreeting = () => {
   const hour = new Date().getHours();
+
   if (hour < 12) return "Good Morning";
   if (hour < 17) return "Good Afternoon";
   return "Good Evening";
 };
 
-/**
- * Checks if a specific time has already passed today
- * Useful for marking medicine as "Missed"
- * @param {string} timeString - Format "HH:mm" (e.g., "08:00")
- * @returns {boolean}
- */
+// ==============================
+// TIME PASSED CHECK
+// ==============================
 export const isTimePassed = (timeString) => {
-  const [hours, minutes] = timeString.split(":").map(Number);
+  const parsed = parseTimeString(timeString);
+  if (!parsed) return false;
+
   const now = new Date();
   const target = new Date();
-  target.setHours(hours, minutes, 0);
 
-  return now > target;
+  target.setHours(parsed.hours, parsed.minutes, 0, 0);
+
+  return now.getTime() > target.getTime();
 };
 
-/**
- * Returns the name of the current month in uppercase
- * @returns {string} - e.g., "APRIL, 2026"
- */
+// ==============================
+// MONTH YEAR
+// ==============================
 export const getCurrentMonthYear = () => {
   const now = new Date();
-  const month = now.toLocaleString("default", { month: "long" });
-  return `${month.toUpperCase()}, ${now.getFullYear()}`;
+
+  return now
+    .toLocaleString(IST_LOCALE, {
+      month: "long",
+      year: "numeric",
+    })
+    .toUpperCase();
 };

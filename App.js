@@ -8,8 +8,7 @@ import { PersistGate } from 'redux-persist/integration/react'; // Necessary for 
 
 // Internal Imports
 import AppNavigator from './src/navigation/AppNavigator';
-// FIX: Changed 'store' to '{ store, persistor }' to match named exports
-import { store, persistor } from './src/store'; 
+import { store, persistor } from './src/Store/store'; 
 
 SplashScreen.preventAutoHideAsync();
 

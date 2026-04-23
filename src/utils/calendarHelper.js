@@ -1,24 +1,36 @@
-import { addDays, format, startOfWeek, isSameDay } from "date-fns";
-import uuid from 'react-native-uuid';
+// src/utils/calendarHelper.js
+import { format, addDays, startOfToday, isSameDay } from 'date-fns';
 
 /**
- * Generates the current week (7 days) starting from Monday
- * @param {Date} referenceDate - The anchor date (defaults to today)
- * @returns {Array} - Array of date objects for the horizontal calendar
+ * Generates a week of dates starting from a specific reference date (usually today).
+ * @param {Date} referenceDate - The starting point for the week.
+ * @returns {Array} List of date objects for the horizontal calendar.
  */
 export const getDynamicWeek = (referenceDate = new Date()) => {
-  // Start the week on Monday (1)
-  const start = startOfWeek(referenceDate, { weekStartsOn: 1 });
-
-  return Array.from({ length: 7 }).map((_, i) => {
-    const dayDate = addDays(start, i);
+  const days = [];
+  
+  for (let i = 0; i < 7; i++) {
+    const dateObj = addDays(referenceDate, i);
     
-    return {
-      id: uuid.v4(),
-      date: format(dayDate, "d"),      // e.g., "22"
-      day: format(dayDate, "EEE").toUpperCase(), // e.g., "WED"
-      fullDate: dayDate,               // Original date object for comparison
-      active: isSameDay(dayDate, referenceDate), // Auto-highlights today
-    };
-  });
+    days.push({
+      id: i.toString(),
+      // 'd' gives the day of the month (e.g., 23)
+      date: format(dateObj, 'd'), 
+      // 'EEE' gives the short day name (e.g., MON, TUE)
+      day: format(dateObj, 'EEE'), 
+      // check if this specific date is actually today
+      active: isSameDay(dateObj, startOfToday()),
+      // fullDate useful for keys or filtering Redux data
+      fullDate: format(dateObj, 'yyyy-MM-dd'), 
+    });
+  }
+  
+  return days;
+};
+
+/**
+ * Returns a formatted string for the Header (e.g., "April 2026")
+ */
+export const getCurrentMonthYear = () => {
+  return format(new Date(), 'MMMM yyyy');
 };
