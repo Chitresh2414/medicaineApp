@@ -3,19 +3,19 @@
 export const getMedicineIcon = (type) => {
   const ICON_MAP = {
     tablet: "pill",
-    capsule: "pill-outline",
-    syrup: "cup",
+    capsule: "capsule",
+    syrup: "bottle-tonic-plus",
     liquid: "cup-water",
     powder: "flask",
     topical: "tube",
-    drops: "eye-dropper",
+    drops: "eyedropper",
     patch: "bandage",
     inhaler: "spray",
     spray: "spray-bottle",
     injection: "needle",
     suppository: "medical-bag",
-    other: "pill",
+    other: "medical-bag",
   };
 
-  return ICON_MAP[type] || "pill";
+  return ICON_MAP[type?.toLowerCase()] || "medical-bag";
 };

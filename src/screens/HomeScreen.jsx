@@ -41,15 +41,13 @@ const HomeScreen = ({ navigation }) => {
   // FILTER MEDICINES
   const filteredMedicines = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return medicines.filter((m) =>
-      m?.name?.toLowerCase().includes(q)
-    );
+    return medicines.filter((m) => m?.name?.toLowerCase().includes(q));
   }, [medicines, searchQuery]);
 
   // COMPLETED COUNT
   const completedCount = useMemo(
     () => medicines.filter((m) => m.completed).length,
-    [medicines]
+    [medicines],
   );
 
   // FLATLIST STABLE CONFIG
@@ -67,42 +65,40 @@ const HomeScreen = ({ navigation }) => {
   // ACTIONS
   const handleMarkAsDone = useCallback(
     (id) => {
-      Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success
-      );
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       dispatch({ type: "TOGGLE_COMPLETION", payload: id });
     },
-    [dispatch]
+    [dispatch],
   );
 
+  // ✅ FIX 1 — "MedicineDetail" par navigate karo
   const handleEditPress = useCallback(
     (medicine) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      navigation.navigate("AddMedicine", {
-        mode: "Edit",
+      navigation.navigate("MedicineDetail", {
         initialData: medicine,
       });
     },
-    [navigation]
+    [navigation],
   );
 
-  // RENDER ITEM
+  // ✅ FIX 2 — item pass karo, item.id nahi
   const renderMedicine = useCallback(
-    ({ item }) => (
-      <View style={{ paddingHorizontal: SPACING.l }}>
-        <MedicineItem
-          name={item.name}
-          dose={item.dose}
-          time={item.reminder}
-          iconName={item.type}
-          completed={item.completed}
-          onPress={() => handleMarkAsDone(item.id)}
-          onLongPress={() => handleEditPress(item)}
-        />
-      </View>
-    ),
-    [handleMarkAsDone, handleEditPress]
-  );
+  ({ item }) => (
+    <View style={{ paddingHorizontal: SPACING.l }}>
+      <MedicineItem
+        name={item.name}
+        dose={item.dose}
+        time={item.reminder}
+        iconName={item.type}
+        completed={item.completed}
+        onPress={() => handleMarkAsDone(item.id)}  // ← circle = Mark Done ✅
+        onCardPress={() => handleEditPress(item)}   // ← double tap = Details 🔍
+      />
+    </View>
+  ),
+  [handleMarkAsDone, handleEditPress],
+);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -123,9 +119,7 @@ const HomeScreen = ({ navigation }) => {
           style={styles.profileBadge}
           onPress={() => navigation.navigate("Profile")}
         >
-          <Text style={styles.profileLetter}>
-            {user?.profileLetter || "U"}
-          </Text>
+          <Text style={styles.profileLetter}>{user?.profileLetter || "U"}</Text>
         </TouchableOpacity>
       </View>
 
@@ -138,7 +132,6 @@ const HomeScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollPadding}
         ListHeaderComponent={
           <>
-
             {/* CALENDAR */}
             <View style={styles.calendarContainer}>
               <Text style={styles.monthLabel}>{visibleMonth}</Text>
@@ -211,9 +204,7 @@ const HomeScreen = ({ navigation }) => {
       {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() =>
-          navigation.navigate("AddMedicine", { mode: "Add" })
-        }
+        onPress={() => navigation.navigate("AddMedicine", { mode: "Add" })}
       >
         <Feather name="plus" size={32} color={COLORS.white} />
       </TouchableOpacity>

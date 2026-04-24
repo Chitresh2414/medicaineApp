@@ -1,72 +1,101 @@
-import React, { memo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { formatTo12Hour } from '../utils/timeHelper';
-import { getMedicineIcon } from '../constants/iconsmap'
+import { getMedicineIcon } from '../constants/iconsmap';
 
-const MedicineItem = memo(({ 
-  name = "Unnamed Medicine", 
-  dose = "Dosage not set", 
-  time = new Date(), 
-  iconName = "other", 
-  completed = false, 
-  onPress 
+const MedicineItem = ({
+  name = "Unnamed Medicine",
+  dose = "Dosage not set",
+  time = new Date(),
+  iconName = "other",
+  completed = false,
+  onPress,       // circle = Mark Done
+  onCardPress,   // double tap = Details Screen
 }) => {
-  
   const statusColor = completed ? COLORS.primary : COLORS.border;
   const tagBackground = completed ? COLORS.primaryLight : '#F1F5F9';
   const textColor = completed ? COLORS.primary : COLORS.primaryDark;
 
+  // FIXED: proper double tap logic
+  const lastTap = React.useRef(null);
+
+  const handleCardPress = () => {
+    const now = Date.now();
+
+    if (lastTap.current && now - lastTap.current < 300) {
+      // double tap detected
+      onCardPress && onCardPress();
+    }
+
+    lastTap.current = now;
+  };
+
   return (
-    <TouchableOpacity 
-      style={[styles.card, completed && styles.completedCard]}
-      activeOpacity={0.7}
-      onPress={onPress}
-      disabled={!onPress}
-    >
-      {/* LEFT: STATUS ICON */}
-      <View style={styles.iconContainer}>
-        <MaterialCommunityIcons 
-          name={completed ? "check-circle" : "circle-outline"} 
-          size={26} 
-          color={statusColor} 
+    <View style={[styles.card, completed && styles.completedCard]}>
+
+      {/* LEFT: Circle → Mark as Done */}
+      <TouchableOpacity
+        onPress={onPress}
+        style={styles.iconContainer}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <MaterialCommunityIcons
+          name={completed ? "check-circle" : "circle-outline"}
+          size={26}
+          color={statusColor}
         />
-      </View>
-      
-      {/* MIDDLE: TEXT INFO */}
-      <View style={styles.info}>
-        <Text 
-          numberOfLines={1} 
-          style={[styles.name, completed && styles.completedText]}
-        >
-          {name}
-        </Text>
+      </TouchableOpacity>
 
-        <Text style={styles.dose}>{dose}</Text>
-      </View>
+      {/* CARD AREA → Double tap for details */}
+      <TouchableOpacity
+        style={styles.cardContent}
+        activeOpacity={0.7}
+        onPress={handleCardPress}
+      >
+        <View style={styles.info}>
+          <Text
+            numberOfLines={1}
+            style={[styles.name, completed && styles.completedText]}
+          >
+            {name}
+          </Text>
 
-      {/* RIGHT: TIME + TYPE ICON */}
-      <View style={styles.rightSection}>
-        
-        {/* TIME TAG */}
-        <View style={[styles.timeTag, { backgroundColor: tagBackground }]}>
-          <Text style={[styles.timeText, { color: textColor }]}>
-            {formatTo12Hour(time)}
+          <Text style={styles.dose}>
+            {dose}
           </Text>
         </View>
 
-        {/* TYPE ICON */}
-        <MaterialCommunityIcons 
-          name={getMedicineIcon(iconName)} 
-          size={22} 
-          color={completed ? COLORS.primary : COLORS.textSub} 
-        />
-      </View>
-    </TouchableOpacity>
+        <View style={styles.rightSection}>
+          <View
+            style={[
+              styles.timeTag,
+              { backgroundColor: tagBackground }
+            ]}
+          >
+            <Text
+              style={[
+                styles.timeText,
+                { color: textColor }
+              ]}
+            >
+              {formatTo12Hour(time)}
+            </Text>
+          </View>
+
+          <MaterialCommunityIcons
+            name={getMedicineIcon(iconName)}
+            size={22}
+            color={completed ? COLORS.primary : COLORS.textSub}
+          />
+        </View>
+      </TouchableOpacity>
+
+    </View>
   );
-});
+};
 
 const styles = StyleSheet.create({
   card: {
@@ -88,18 +117,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
   },
 
-  iconContainer: { 
-    marginRight: SPACING.m 
+  iconContainer: {
+    marginRight: SPACING.m,
   },
 
-  info: { 
-    flex: 1 
+  cardContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
-  name: { 
-    ...FONTS.bold, 
-    fontSize: 17, 
-    color: COLORS.primaryDark, 
+  info: {
+    flex: 1,
+  },
+
+  name: {
+    ...FONTS.bold,
+    fontSize: 17,
+    color: COLORS.primaryDark,
   },
 
   completedText: {
@@ -107,16 +142,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSub,
   },
 
-  dose: { 
-    ...FONTS.regular, 
-    fontSize: 13, 
+  dose: {
+    ...FONTS.regular,
+    fontSize: 13,
     color: COLORS.textSub,
     marginTop: 2,
   },
 
-  rightSection: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   timeTag: {
@@ -126,10 +161,10 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
 
-  timeText: { 
-    ...FONTS.bold, 
+  timeText: {
+    ...FONTS.bold,
     fontSize: 12,
-  }
+  },
 });
 
 export default MedicineItem;
