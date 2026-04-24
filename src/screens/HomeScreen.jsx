@@ -84,21 +84,28 @@ const HomeScreen = ({ navigation }) => {
 
   // ✅ FIX 2 — item pass karo, item.id nahi
   const renderMedicine = useCallback(
-  ({ item }) => (
-    <View style={{ paddingHorizontal: SPACING.l }}>
-      <MedicineItem
-        name={item.name}
-        dose={item.dose}
-        time={item.reminder}
-        iconName={item.type}
-        completed={item.completed}
-        onPress={() => handleMarkAsDone(item.id)}  // ← circle = Mark Done ✅
-        onCardPress={() => handleEditPress(item)}   // ← double tap = Details 🔍
-      />
-    </View>
-  ),
-  [handleMarkAsDone, handleEditPress],
-);
+    ({ item }) => (
+      <View style={{ paddingHorizontal: SPACING.l }}>
+        <MedicineItem
+          name={item.name}
+          dose={item.dose}
+          // multiple reminder times support
+          time={
+            item.reminders?.length > 0
+              ? item.reminders.join(", ")
+              : item.reminder || "No Time"
+          }
+          iconName={item.type}
+          completed={item.completed}
+          // circle click = Mark Done ✅
+          onPress={() => handleMarkAsDone(item.id)}
+          // full card click = Details / Edit 🔍
+          onCardPress={() => handleEditPress(item)}
+        />
+      </View>
+    ),
+    [handleMarkAsDone, handleEditPress],
+  );
 
   return (
     <SafeAreaView style={styles.container}>

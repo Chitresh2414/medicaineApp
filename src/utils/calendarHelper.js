@@ -1,38 +1,59 @@
-import { format, addDays, startOfToday, isSameDay } from 'date-fns';
+import {
+  format,
+  addDays,
+  startOfToday,
+  isSameDay,
+} from "date-fns";
 
 /**
- * Generates a scrollable week of dates.
- * We use 21 days (3 weeks) to support horizontal scrolling month changes.
+ * Today se next 7 days show honge
+ * Example:
+ * Today = 24 April
+ * Show = 24, 25, 26, 27, 28, 29, 30
  */
-export const getDynamicWeek = (referenceDate = new Date()) => {
+
+export const getDynamicWeek = (
+  referenceDate = new Date()
+) => {
   const days = [];
   const today = startOfToday();
-  
-  // Start from 2 days ago to allow retrospective view
-  const startDate = addDays(referenceDate, -2); 
-  
-  for (let i = 0; i < 21; i++) {
+
+  // Start exactly from today
+  const startDate = startOfToday();
+
+  for (let i = 0; i < 7; i++) {
     const dateObj = addDays(startDate, i);
-    
+
     days.push({
       id: i.toString(),
-      date: format(dateObj, 'd'), 
-      day: format(dateObj, 'EEE'), 
-      // active is for the visual highlight in the UI
+
+      // UI display
+      date: format(dateObj, "d"),
+      day: format(dateObj, "EEE"),
+
+      // Highlight today
       active: isSameDay(dateObj, today),
-      // fullDate is the source of truth for Month headers and Redux filtering
-      fullDate: format(dateObj, 'yyyy-MM-dd'), 
-      // added rawDate in case you need to do more complex date math in components
-      rawDate: dateObj, 
+
+      // Redux filtering
+      fullDate: format(dateObj, "yyyy-MM-dd"),
+
+      // Raw JS Date object
+      rawDate: dateObj,
+
+      // Extra helpful flags
+      isToday: isSameDay(dateObj, today),
+      monthYear: format(dateObj, "MMMM yyyy"),
     });
   }
-  
+
   return days;
 };
 
 /**
- * Returns formatted string (e.g., "April 2026") for initial UI state
+ * Current month + year header
+ * Example: April 2026
  */
+
 export const getCurrentMonthYear = () => {
-  return format(new Date(), 'MMMM yyyy');
+  return format(new Date(), "MMMM yyyy");
 };
