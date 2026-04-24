@@ -1,21 +1,18 @@
-// src/iconMap.js
-
 export const getMedicineIcon = (type) => {
-  const ICON_MAP = {
-    tablet: "pill",
-    capsule: "capsule",
-    syrup: "bottle-tonic-plus",
-    liquid: "cup-water",
-    powder: "flask",
-    topical: "tube",
-    drops: "eyedropper",
-    patch: "bandage",
-    inhaler: "spray",
-    spray: "spray-bottle",
-    injection: "needle",
-    suppository: "medical-bag",
-    other: "medical-bag",
-  };
-
-  return ICON_MAP[type?.toLowerCase()] || "medical-bag";
+  switch (type?.toLowerCase()) {
+    case 'tablet': return 'pill';
+    case 'capsule': return 'pill-multiple';
+    case 'syrup': return 'bottle-tonic-plus';
+    case 'liquid': return 'cup-water';
+    case 'powder': return 'blur';
+    case 'topical': return 'lotion-outline';
+    case 'drops': return 'water-outline';
+    case 'patch': return 'sticker-outline';
+    case 'inhaler': return 'air-filter';
+    case 'spray': return 'spray';
+    case 'injection': return 'needle';
+    case 'suppository': return 'medical-bag';
+    case 'other': return 'plus-circle-outline';
+    default: return 'medication';
+  }
 };
