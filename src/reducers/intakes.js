@@ -21,7 +21,6 @@ const isValidMedicine = (med) => {
 
 const intakesReducer = (state = initialState, action) => {
   switch (action.type) {
-
     case ADD_MEDICINE: {
       const med = action.payload;
 
@@ -51,11 +50,10 @@ const intakesReducer = (state = initialState, action) => {
     case EDIT_MEDICINE: {
       const med = action.payload;
       if (!med?.id) return state;
-
       return {
         ...state,
         medicines: state.medicines.map((m) =>
-          m.id === med.id ? { ...m, ...med } : m
+          m.id === med.id ? { ...m, ...med } : m,
         ),
       };
     }

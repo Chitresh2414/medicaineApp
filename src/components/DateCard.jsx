@@ -1,26 +1,13 @@
 import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-// Updated import to match your new theme file
+import { StyleSheet, Text, View } from 'react-native';
 import { COLORS, FONTS, SHADOWS } from '../constants/theme';
 
-const DateCard = ({ date, day, active }) => (
-  <View style={[
-    styles.card, 
-    active ? [styles.activeCard, SHADOWS.small] : styles.inactiveCard
-  ]}>
-    <Text style={[styles.dayText, active && styles.activeText]}>{day}</Text>
-    <Text style={[styles.dateText, active && styles.activeText]}>{date}</Text>
-    
-    {/* Modern indicator dot for active day */}
-    {active && <View style={styles.activeDot} />}
-  </View>
-);
-
+// STYLES AT TOP: Industry standard to prevent reference errors
 const styles = StyleSheet.create({
   card: { 
-    width: 60, 
-    height: 90, 
-    borderRadius: 20, // More rounded for modern look
+    width: 62, // Slightly wider for better spacing
+    height: 95, 
+    borderRadius: 22, 
     justifyContent: 'center', 
     alignItems: 'center', 
     marginRight: 12,
@@ -31,31 +18,51 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   activeCard: { 
-    backgroundColor: COLORS.primary, // Using your new Teal
+    backgroundColor: COLORS.primary, 
     borderColor: COLORS.primary,
   },
   dayText: { 
-    ...FONTS.medium, // Using font spread
-    fontSize: 12, 
+    ...FONTS.medium, 
+    fontSize: 11, 
     color: COLORS.textSub, 
-    textTransform: 'uppercase' 
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
   dateText: { 
     ...FONTS.bold, 
-    fontSize: 20, 
+    fontSize: 22, 
     color: COLORS.primaryDark, 
-    marginTop: 4 
+    marginTop: 2 
   },
   activeText: { 
     color: COLORS.white 
   },
   activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: COLORS.white,
-    marginTop: 6
+    marginTop: 8,
+    opacity: 0.9
   }
 });
+
+const DateCard = ({ date, day, active }) => (
+  <View style={[
+    styles.card, 
+    active ? [styles.activeCard, SHADOWS.medium] : styles.inactiveCard
+  ]}>
+    <Text style={[styles.dayText, active && styles.activeText]}>
+      {day}
+    </Text>
+    
+    <Text style={[styles.dateText, active && styles.activeText]}>
+      {date}
+    </Text>
+    
+    {/* Modern indicator dot - helps the eye find "Today" instantly */}
+    {active && <View style={styles.activeDot} />}
+  </View>
+);
 
 export default DateCard;
