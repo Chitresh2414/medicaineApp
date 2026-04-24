@@ -44,7 +44,7 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.statsContainer}>
           <ProfileStats label="Medicines" value={medicines.length} />
           <View style={styles.divider} />
-          <ProfileStats label="Streak" value="12 Days" />
+          <ProfileStats label="Streak" value={`${user.streak || 0} Days`} />
         </View>
 
         {/* Options List */}
@@ -53,7 +53,7 @@ const ProfileScreen = ({ navigation }) => {
           <ProfileOption 
             icon="account-edit-outline" 
             label="Update Profile" 
-            onPress={() => console.log("Edit Profile")} 
+            onPress={() => navigation.navigate("UpdateProfile")} // This triggers the navigation
           />
           <ProfileOption 
             icon="bell-outline" 
@@ -63,7 +63,7 @@ const ProfileScreen = ({ navigation }) => {
           <ProfileOption 
             icon="shield-check-outline" 
             label="Privacy Policy" 
-            onPress={() => console.log("Privacy")} 
+            onPress={() => navigation.navigate("Privacy")} 
           />
           
           <Text style={[styles.sectionTitle, { marginTop: SPACING.xl }]}>Actions</Text>

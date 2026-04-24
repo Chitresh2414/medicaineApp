@@ -47,18 +47,20 @@ const LoginScreen = ({ navigation }) => {
       const response = await loginUserApi(form.email, form.password);
 
       // 2. Dispatch to Redux Store (Updates 'Chinku' profile & token)
-      dispatch({ type: 'UPDATE_PROFILE', payload: response.data.user });
-      dispatch({ type: 'SET_TOKEN', payload: response.data.token });
+      dispatch({ type: "UPDATE_PROFILE", payload: response.data.user });
+      dispatch({ type: "SET_TOKEN", payload: response.data.token });
 
       // 3. Navigate to Home (Reset stack so user can't go back to Login)
       navigation.reset({
         index: 0,
         routes: [{ name: "Home" }],
       });
-
     } catch (error) {
       console.log("Login Error:", error);
-      Alert.alert("Login Failed", error.message || "Please check your credentials");
+      Alert.alert(
+        "Login Failed",
+        error.message || "Please check your credentials",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +88,7 @@ const LoginScreen = ({ navigation }) => {
               autoCapitalize="none"
               keyboardType="email-address"
             />
-            
+
             <AppInput
               icon="lock-outline"
               placeholder="Password"
@@ -135,7 +137,12 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: SPACING.l, justifyContent: "center" },
   header: { alignItems: "flex-start", marginBottom: SPACING.xl },
   title: { ...FONTS.bold, fontSize: 32, color: COLORS.primaryDark },
-  subtitle: { ...FONTS.regular, fontSize: 16, color: COLORS.textSub, marginTop: 8 },
+  subtitle: {
+    ...FONTS.regular,
+    fontSize: 16,
+    color: COLORS.textSub,
+    marginTop: 8,
+  },
   form: { marginBottom: SPACING.l },
   button: {
     backgroundColor: COLORS.primary,
@@ -147,7 +154,11 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { backgroundColor: COLORS.textSub, opacity: 0.6 },
   buttonText: { ...FONTS.bold, color: COLORS.white, fontSize: 18 },
-  footer: { flexDirection: "row", marginTop: SPACING.xl, justifyContent: "center" },
+  footer: {
+    flexDirection: "row",
+    marginTop: SPACING.xl,
+    justifyContent: "center",
+  },
   footerText: { ...FONTS.regular, color: COLORS.textSub },
   link: { ...FONTS.bold, color: COLORS.primary },
 });
