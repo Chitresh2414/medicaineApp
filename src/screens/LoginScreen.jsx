@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   View,
@@ -10,27 +10,33 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useDispatch } from "react-redux"; // Import Dispatch
+import { useDispatch } from "react-redux";
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
-import { loginUserApi } from "../api/auth";
+import { loginUserApi } from "../api/authapi"; // Ensure this matches your export name
 
 const LoginScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const [form, setForm] = useState({ email: "", password: "" });
+
+  const [form, setForm] = useState({
+    email: "",
+    password: "",
+  });
+
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // Toggle state
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
-    let isValid = true;
     let newErrors = {};
+    let isValid = true;
 
     if (!form.email.trim().includes("@")) {
       newErrors.email = "Please enter a valid email";
       isValid = false;
     }
-    if (form.password.length < 6) {
+
+    if (form.password.trim().length < 6) {
       newErrors.password = "Password must be at least 6 characters";
       isValid = false;
     }
@@ -41,25 +47,48 @@ const LoginScreen = ({ navigation }) => {
 
   const handleSignIn = async () => {
     if (!validate()) return;
+
     setIsLoading(true);
+
     try {
-      // 1. Call your Mock API logic
-      const response = await loginUserApi(form.email, form.password);
-
-      // 2. Dispatch to Redux Store (Updates 'Chinku' profile & token)
-      dispatch({ type: "UPDATE_PROFILE", payload: response.data.user });
-      dispatch({ type: "SET_TOKEN", payload: response.data.token });
-
-      // 3. Navigate to Home (Reset stack so user can't go back to Login)
-      navigation.reset({
-        index: 0,
-        routes: [{ name: "Home" }],
+      // Corrected: changed 'loginApi' to 'loginUserApi' to match the import
+      const response = await loginUserApi({
+        email: form.email,
+        password: form.password,
       });
+
+      if (response.success) {
+        dispatch({
+          type: "UPDATE_PROFILE",
+          payload: {
+            name: response.user.name,
+            email: response.user.email,
+            profileLetter: response.user.profileLetter,
+            location: response.user.location,
+          },
+        });
+
+        dispatch({
+          type: "SET_TOKEN",
+          payload: response.token,
+        });
+
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }],
+        });
+      } else {
+        Alert.alert(
+          "Login Failed",
+          response.message || "Invalid credentials"
+        );
+      }
     } catch (error) {
       console.log("Login Error:", error);
+
       Alert.alert(
         "Login Failed",
-        error.message || "Please check your credentials",
+        error.message || "Something went wrong"
       );
     } finally {
       setIsLoading(false);
@@ -75,7 +104,9 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Welcome Back!</Text>
-            <Text style={styles.subtitle}>Sign in to manage your health</Text>
+            <Text style={styles.subtitle}>
+              Sign in to manage your health
+            </Text>
           </View>
 
           <View style={styles.form}>
@@ -83,7 +114,9 @@ const LoginScreen = ({ navigation }) => {
               icon="email-outline"
               placeholder="Email Address"
               value={form.email}
-              onChangeText={(text) => setForm({ ...form, email: text })}
+              onChangeText={(text) =>
+                setForm({ ...form, email: text })
+              }
               error={errors.email}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -93,12 +126,15 @@ const LoginScreen = ({ navigation }) => {
               icon="lock-outline"
               placeholder="Password"
               value={form.password}
-              onChangeText={(text) => setForm({ ...form, password: text })}
+              onChangeText={(text) =>
+                setForm({ ...form, password: text })
+              }
               error={errors.password}
-              // Password Toggle Logic
               secureTextEntry={!showPassword}
               rightIcon={showPassword ? "eye-off" : "eye"}
-              onRightIconPress={() => setShowPassword(!showPassword)}
+              onRightIconPress={() =>
+                setShowPassword(!showPassword)
+              }
               textContentType="password"
             />
           </View>
@@ -120,9 +156,13 @@ const LoginScreen = ({ navigation }) => {
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
-              <Text style={styles.link}>Sign up!</Text>
+            <Text style={styles.footerText}>
+              Don't have an account?
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("SignUp")}
+            >
+              <Text style={styles.link}> Sign up!</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -132,18 +172,36 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  flex: { flex: 1 },
-  content: { flex: 1, paddingHorizontal: SPACING.l, justifyContent: "center" },
-  header: { alignItems: "flex-start", marginBottom: SPACING.xl },
-  title: { ...FONTS.bold, fontSize: 32, color: COLORS.primaryDark },
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: SPACING.l,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "flex-start",
+    marginBottom: SPACING.xl,
+  },
+  title: {
+    ...FONTS.bold,
+    fontSize: 32,
+    color: COLORS.primaryDark,
+  },
   subtitle: {
     ...FONTS.regular,
     fontSize: 16,
     color: COLORS.textSub,
     marginTop: 8,
   },
-  form: { marginBottom: SPACING.l },
+  form: {
+    marginBottom: SPACING.l,
+  },
   button: {
     backgroundColor: COLORS.primary,
     height: 58,
@@ -152,15 +210,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: SPACING.m,
   },
-  buttonDisabled: { backgroundColor: COLORS.textSub, opacity: 0.6 },
-  buttonText: { ...FONTS.bold, color: COLORS.white, fontSize: 18 },
+  buttonDisabled: {
+    backgroundColor: COLORS.textSub,
+    opacity: 0.6,
+  },
+  buttonText: {
+    ...FONTS.bold,
+    color: COLORS.white,
+    fontSize: 18,
+  },
   footer: {
     flexDirection: "row",
     marginTop: SPACING.xl,
     justifyContent: "center",
   },
-  footerText: { ...FONTS.regular, color: COLORS.textSub },
-  link: { ...FONTS.bold, color: COLORS.primary },
+  footerText: {
+    ...FONTS.regular,
+    color: COLORS.textSub,
+  },
+  link: {
+    ...FONTS.bold,
+    color: COLORS.primary,
+  },
 });
 
 export default LoginScreen;

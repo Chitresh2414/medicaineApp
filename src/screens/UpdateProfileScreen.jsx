@@ -1,55 +1,105 @@
 import React, { useState, useEffect } from "react";
-import { 
-  StyleSheet, View, Text, TouchableOpacity, 
-  ScrollView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator 
+import {
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
-// Assuming you have an API helper
-// import { updateProfileApi } from "../api/user";
+import { updateProfileApi } from "../api/authapi";
 
 const UpdateProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { name, email, id } = useSelector((state) => state.user);
-  
+  // Get current user data from Redux
+  const user = useSelector((state) => state.user);
+
   const [formData, setFormData] = useState({
-    name: name,
-    email: email,
+    name: user?.name || "",
+    email: user?.email || "",
     currentPassword: "",
     newPassword: "",
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
 
-  // Sync state if Redux updates elsewhere
+  // Sync form if Redux state changes externally
   useEffect(() => {
-    setFormData(prev => ({ ...prev, name, email }));
-  }, [name, email]);
+    setFormData((prev) => ({
+      ...prev,
+      name: user?.name || "",
+      email: user?.email || "",
+    }));
+  }, [user]);
 
   const handleSave = async () => {
-    // 1. Validation Logic
-    if (!formData.name.trim() || !formData.email.includes("@")) {
-      Alert.alert("Invalid Input", "Please provide a valid name and email.");
+    // 1. Validations
+    if (!formData.name.trim()) {
+      Alert.alert("Invalid Input", "Please enter your full name");
+      return;
+    }
+
+    if (!formData.email.trim().includes("@")) {
+      Alert.alert("Invalid Input", "Please enter a valid email");
+      return;
+    }
+
+    if (formData.newPassword && !formData.currentPassword) {
+      Alert.alert(
+        "Password Required",
+        "Current password is required to set a new password"
+      );
+      return;
+    }
+
+    if (formData.newPassword && formData.newPassword.length < 6) {
+      Alert.alert(
+        "Invalid Password",
+        "New password must be at least 6 characters"
+      );
       return;
     }
 
     setIsLoading(true);
+
     try {
-      // 2. API Call (FastAPI)
-      // const response = await updateProfileApi(id, formData);
-      
-      // 3. Update Global State
-      dispatch({ 
-        type: "UPDATE_PROFILE", 
-        payload: { name: formData.name, email: formData.email } 
+      const response = await updateProfileApi({
+        name: formData.name,
+        email: formData.email,
+        // Only send password fields if the user actually typed something
+        ...(formData.currentPassword && { currentPassword: formData.currentPassword }),
+        ...(formData.newPassword && { newPassword: formData.newPassword }),
+      });
+
+      // Assuming your FastAPI returns the updated user object
+      // Logic adjusted to handle both wrapped and direct responses
+      const updatedUser = response.user || response;
+
+      dispatch({
+        type: "UPDATE_PROFILE",
+        payload: {
+          name: updatedUser.name,
+          email: updatedUser.email,
+          profileLetter: updatedUser.profileLetter || updatedUser.name?.charAt(0).toUpperCase(),
+        },
       });
 
       Alert.alert("Success", "Profile updated successfully");
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to update profile");
+      // Show the specific error detail from FastAPI if available
+      const errorMessage = typeof error.detail === 'string' 
+        ? error.detail 
+        : error.message || "Something went wrong";
+        
+      Alert.alert("Update Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -57,19 +107,21 @@ const UpdateProfileScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Personal Information</Text>
+
             <AppInput
               label="Full Name"
               icon="account-outline"
               value={formData.name}
               onChangeText={(val) => setFormData({ ...formData, name: val })}
             />
+
             <AppInput
               label="Email Address"
               icon="email-outline"
@@ -82,26 +134,35 @@ const UpdateProfileScreen = ({ navigation }) => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Security</Text>
+
             <AppInput
               label="Current Password"
               icon="lock-outline"
-              placeholder="Required to change email/password"
+              placeholder="Required only to change password"
               secureTextEntry
               value={formData.currentPassword}
-              onChangeText={(val) => setFormData({ ...formData, currentPassword: val })}
+              onChangeText={(val) =>
+                setFormData({ ...formData, currentPassword: val })
+              }
             />
+
             <AppInput
               label="New Password"
               icon="lock-reset"
               placeholder="Leave blank to keep current"
               secureTextEntry
               value={formData.newPassword}
-              onChangeText={(val) => setFormData({ ...formData, newPassword: val })}
+              onChangeText={(val) =>
+                setFormData({ ...formData, newPassword: val })
+              }
             />
           </View>
 
-          <TouchableOpacity 
-            style={[styles.saveButton, isLoading && styles.disabledButton]}
+          <TouchableOpacity
+            style={[
+              styles.saveButton,
+              isLoading && styles.disabledButton,
+            ]}
             onPress={handleSave}
             disabled={isLoading}
           >
@@ -111,6 +172,14 @@ const UpdateProfileScreen = ({ navigation }) => {
               <Text style={styles.saveButtonText}>Update Profile</Text>
             )}
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={() => navigation.goBack()}
+            disabled={isLoading}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -118,16 +187,23 @@ const UpdateProfileScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
-  scrollContainer: { padding: SPACING.l },
-  section: { marginBottom: SPACING.xl },
-  sectionTitle: { 
-    ...FONTS.bold, 
-    fontSize: 16, 
-    color: COLORS.primary, 
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
+  scrollContainer: {
+    padding: SPACING.l,
+  },
+  section: {
+    marginBottom: SPACING.xl,
+  },
+  sectionTitle: {
+    ...FONTS.bold,
+    fontSize: 14,
+    color: COLORS.primary,
     marginBottom: SPACING.m,
-    textTransform: 'uppercase',
-    letterSpacing: 1
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   saveButton: {
     backgroundColor: COLORS.primary,
@@ -138,8 +214,26 @@ const styles = StyleSheet.create({
     ...SHADOWS.medium,
     marginTop: SPACING.m,
   },
-  disabledButton: { backgroundColor: COLORS.textSub, opacity: 0.7 },
-  saveButtonText: { ...FONTS.bold, color: COLORS.white, fontSize: 18 },
+  disabledButton: {
+    backgroundColor: COLORS.textSub,
+    opacity: 0.7,
+  },
+  saveButtonText: {
+    ...FONTS.bold,
+    color: COLORS.white,
+    fontSize: 18,
+  },
+  cancelButton: {
+    height: 58,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: SPACING.s,
+  },
+  cancelButtonText: {
+    ...FONTS.regular,
+    color: COLORS.textSub,
+    fontSize: 16,
+  },
 });
 
 export default UpdateProfileScreen;

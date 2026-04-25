@@ -8,16 +8,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useDispatch } from "react-redux"; // Connect to Redux
+import { useDispatch } from "react-redux";
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
+import { registerUserApi } from "../api/authapi";
 
 const SignUpScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  
-  // Form State
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -25,16 +26,25 @@ const SignUpScreen = ({ navigation }) => {
     confirm: "",
   });
 
-  // UI State for password visibility
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     const { name, email, password, confirm } = formData;
 
-    // Basic Validation
-    if (!name || !email || !password) {
+    if (!name.trim() || !email.trim() || !password.trim()) {
       Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      Alert.alert("Error", "Please enter a valid email");
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters");
       return;
     }
 
@@ -43,21 +53,40 @@ const SignUpScreen = ({ navigation }) => {
       return;
     }
 
-    // 1. Dispatch to Redux (Update the 'Chinku' profile globally)
-    dispatch({ 
-      type: 'UPDATE_PROFILE', 
-      payload: { 
-        name: name, 
-        profileLetter: name.charAt(0).toUpperCase(),
-        location: "Udaipur, IN" 
-      } 
-    });
+    setIsLoading(true);
 
-    // 2. Success Navigation (Reset stack to Home)
-    navigation.reset({
-      index: 0,
-      routes: [{ name: "Home" }],
-    });
+    try {
+      // Fixed function name to match the import
+      const response = await registerUserApi({
+        name,
+        email,
+        password,
+      });
+
+      if (response.success) {
+        // Removed Redux dispatch here so we don't accidentally log the user in 
+        // without a valid JWT token. We'll handle Redux on the Login screen.
+        Alert.alert(
+          "Success",
+          "Account created successfully",
+          [
+            {
+              text: "Login Now",
+              onPress: () => navigation.navigate("Login"),
+            },
+          ]
+        );
+      } else {
+        Alert.alert("Error", response.message || "Registration failed");
+      }
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error.message || "Something went wrong"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,7 +99,6 @@ const SignUpScreen = ({ navigation }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
         >
-          {/* Header Section */}
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>
@@ -78,24 +106,27 @@ const SignUpScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Input Fields Section */}
           <View style={styles.form}>
             <AppInput
               icon="account-outline"
               placeholder="Your Name"
               value={formData.name}
-              onChangeText={(val) => setFormData({ ...formData, name: val })}
+              onChangeText={(val) =>
+                setFormData({ ...formData, name: val })
+              }
             />
-            
+
             <AppInput
               icon="email-outline"
               placeholder="Your Email"
               keyboardType="email-address"
               autoCapitalize="none"
               value={formData.email}
-              onChangeText={(val) => setFormData({ ...formData, email: val })}
+              onChangeText={(val) =>
+                setFormData({ ...formData, email: val })
+              }
             />
-            
+
             <AppInput
               icon="lock-outline"
               placeholder="Your Password"
@@ -103,9 +134,11 @@ const SignUpScreen = ({ navigation }) => {
               rightIcon={showPassword ? "eye-off" : "eye"}
               onRightIconPress={() => setShowPassword(!showPassword)}
               value={formData.password}
-              onChangeText={(val) => setFormData({ ...formData, password: val })}
+              onChangeText={(val) =>
+                setFormData({ ...formData, password: val })
+              }
             />
-            
+
             <AppInput
               icon="lock-check-outline"
               placeholder="Confirm Password"
@@ -113,26 +146,34 @@ const SignUpScreen = ({ navigation }) => {
               rightIcon={showConfirm ? "eye-off" : "eye"}
               onRightIconPress={() => setShowConfirm(!showConfirm)}
               value={formData.confirm}
-              onChangeText={(val) => setFormData({ ...formData, confirm: val })}
+              onChangeText={(val) =>
+                setFormData({ ...formData, confirm: val })
+              }
             />
           </View>
 
-          {/* Primary Action Button */}
           <TouchableOpacity
             style={[styles.button, SHADOWS.medium]}
             onPress={handleSignUp}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Sign up</Text>
+            {isLoading ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.buttonText}>Sign Up</Text>
+            )}
           </TouchableOpacity>
 
-          {/* Footer - Social Login or Back to Login */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.link}>Log In!</Text>
+            <Text style={styles.footerText}>
+              Already have an account?
+            </Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Login")}
+            >
+              <Text style={styles.link}> Log In!</Text>
             </TouchableOpacity>
           </View>
-          
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -192,7 +233,6 @@ const styles = StyleSheet.create({
   link: {
     ...FONTS.bold,
     color: COLORS.primary,
-    marginLeft: 4,
   },
 });
 
