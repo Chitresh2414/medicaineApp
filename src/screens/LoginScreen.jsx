@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
-import { loginUserApi } from "../api/authapi"; // Ensure this matches your export name
+import { loginUserApi } from "../api/authApi"; // Ensure this matches your export name
 
 const LoginScreen = ({ navigation }) => {
   const dispatch = useDispatch();

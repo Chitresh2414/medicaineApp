@@ -7,7 +7,7 @@ import { COLORS, FONTS, SPACING, SHADOWS } from "../constants/theme";
 import ProfileStats from "../components/ProfileStats";
 import ProfileOption from "../components/ProfileOption";
 // Import remains the same
-import { getCurrentUserApi, logoutUserApi } from "../api/authapi";
+import { getCurrentUserApi, logoutUserApi } from "../api/authApi";
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -75,7 +75,7 @@ const ProfileScreen = ({ navigation }) => {
           </View>
 
           <Text style={styles.userName}>{user?.name || "User"}</Text>
-          <Text style={styles.userEmail}>{user?.email || "No Email"}</Text>
+         
         </View>
 
         <View style={styles.statsContainer}>

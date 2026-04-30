@@ -1,13 +1,4 @@
-// src/utils/timeHelper.js
-
-// ==============================
-// CONSTANTS
-// ==============================
 const IST_LOCALE = "en-IN";
-
-// ==============================
-// HELPERS
-// ==============================
 
 const parseTimeString = (timeString) => {
   if (!timeString) return null;
@@ -42,9 +33,6 @@ const parseTimeString = (timeString) => {
   }
 };
 
-// ==============================
-// FORMAT TIME
-// ==============================
 export const formatTo12Hour = (date) => {
   if (!date) return "";
 
@@ -65,9 +53,6 @@ export const formatTo12Hour = (date) => {
     .toUpperCase();
 };
 
-// ==============================
-// GREETING
-// ==============================
 export const getGreeting = () => {
   const hour = new Date().getHours();
 
@@ -76,9 +61,6 @@ export const getGreeting = () => {
   return "Good Evening";
 };
 
-// ==============================
-// TIME PASSED CHECK
-// ==============================
 export const isTimePassed = (timeString) => {
   const parsed = parseTimeString(timeString);
   if (!parsed) return false;
@@ -91,9 +73,7 @@ export const isTimePassed = (timeString) => {
   return now.getTime() > target.getTime();
 };
 
-// ==============================
-// MONTH YEAR
-// ==============================
+
 export const getCurrentMonthYear = () => {
   const now = new Date();
 

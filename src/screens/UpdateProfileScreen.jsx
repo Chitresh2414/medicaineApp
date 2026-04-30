@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
-import { updateProfileApi } from "../api/authapi";
+import { updateProfileApi } from "../api/authApi";
 
 const UpdateProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();

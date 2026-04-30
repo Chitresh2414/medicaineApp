@@ -14,7 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch } from "react-redux";
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
 import AppInput from "../components/AppInput";
-import { registerUserApi } from "../api/authapi";
+import { registerUserApi } from "../api/authApi";
 
 const SignUpScreen = ({ navigation }) => {
   const dispatch = useDispatch();

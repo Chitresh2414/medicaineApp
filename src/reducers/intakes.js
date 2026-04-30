@@ -1,10 +1,13 @@
-// src/reducers/intakes.js
-
+// Existing Types
 export const ADD_MEDICINE = "ADD_MEDICINE";
 export const EDIT_MEDICINE = "EDIT_MEDICINE";
 export const TOGGLE_COMPLETION = "TOGGLE_COMPLETION";
 export const DELETE_MEDICINE = "DELETE_MEDICINE";
 export const RESET_MEDICINES = "RESET_MEDICINES";
+
+// ✅ NEW API TYPES
+export const SET_MEDICINES = "SET_MEDICINES";
+export const UPDATE_TAKE_STATUS = "UPDATE_TAKE_STATUS";
 
 const initialState = {
   medicines: [],
@@ -14,7 +17,7 @@ const initialState = {
 const isValidMedicine = (med) => {
   return (
     med &&
-    typeof med.id !== "undefined" &&
+    (typeof med.id !== "undefined" || typeof med._id !== "undefined") &&
     typeof med.name === "string" &&
     med.name.trim().length > 0
   );
@@ -22,32 +25,41 @@ const isValidMedicine = (med) => {
 
 const intakesReducer = (state = initialState, action) => {
   switch (action.type) {
+    /* ================= SET ALL (API SYNC) ================= */
+    // Jab HomeScreen load hota hai, ye database ka fresh data set karta hai
+    case SET_MEDICINES: {
+      return {
+        ...state,
+        medicines: action.payload || [],
+      };
+    }
+
+    /* ================= UPDATE TAKE STATUS (API SYNC) ================= */
+    // Jab user "Take" button click karta hai, ye local state update karta hai
+    case UPDATE_TAKE_STATUS: {
+      const { id, status } = action.payload;
+      return {
+        ...state,
+        medicines: state.medicines.map((medicine) =>
+          medicine.id === id 
+            ? { ...medicine, is_taken_today: status, updatedAt: new Date().toISOString() } 
+            : medicine
+        ),
+      };
+    }
+
     /* ================= ADD ================= */
     case ADD_MEDICINE: {
       const med = action.payload;
+      if (!isValidMedicine(med)) return state;
 
-      if (!isValidMedicine(med)) {
-        console.warn("Invalid medicine payload:", med);
-        return state;
-      }
-
-      // Prevent duplicate IDs
-      const alreadyExists = state.medicines.some(
-        (item) => item.id === med.id
-      );
-
-      if (alreadyExists) {
-        console.warn("Medicine with same ID already exists");
-        return state;
-      }
+      const alreadyExists = state.medicines.some((item) => item.id === med.id);
+      if (alreadyExists) return state;
 
       const newMedicine = {
         ...med,
-        completed: false,
-        completedAt: null,
-        notificationIds: [],
+        is_taken_today: false, // Backend consistency ke liye
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       return {
@@ -59,43 +71,29 @@ const intakesReducer = (state = initialState, action) => {
     /* ================= EDIT ================= */
     case EDIT_MEDICINE: {
       const updatedMedicine = action.payload;
-
-      if (!updatedMedicine?.id) {
-        console.warn("EDIT_MEDICINE requires medicine id");
-        return state;
-      }
+      if (!updatedMedicine?.id) return state;
 
       return {
         ...state,
         medicines: state.medicines.map((medicine) =>
           medicine.id === updatedMedicine.id
-            ? {
-                ...medicine,
-                ...updatedMedicine,
-                updatedAt: new Date().toISOString(),
-              }
+            ? { ...medicine, ...updatedMedicine, updatedAt: new Date().toISOString() }
             : medicine
         ),
       };
     }
 
-    /* ================= TOGGLE COMPLETE ================= */
+    /* ================= TOGGLE COMPLETE (LOCAL ONLY) ================= */
     case TOGGLE_COMPLETION: {
       const medicineId = action.payload;
-
       return {
         ...state,
         medicines: state.medicines.map((medicine) => {
           if (medicine.id !== medicineId) return medicine;
-
           const nowCompleted = !medicine.completed;
-
           return {
             ...medicine,
             completed: nowCompleted,
-            completedAt: nowCompleted
-              ? new Date().toISOString()
-              : null,
             updatedAt: new Date().toISOString(),
           };
         }),
@@ -104,21 +102,15 @@ const intakesReducer = (state = initialState, action) => {
 
     /* ================= DELETE ================= */
     case DELETE_MEDICINE: {
-      const medicineId = action.payload;
-
       return {
         ...state,
-        medicines: state.medicines.filter(
-          (medicine) => medicine.id !== medicineId
-        ),
+        medicines: state.medicines.filter((m) => m.id !== action.payload),
       };
     }
 
-    /* ================= RESET ================= */
     case RESET_MEDICINES:
       return initialState;
 
-    /* ================= DEFAULT ================= */
     default:
       return state;
   }

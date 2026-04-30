@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef } from "react";
+import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   View,
@@ -7,12 +7,17 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import { useSelector, useDispatch } from "react-redux";
+import { useIsFocused } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
+
+// API Import
+import { getTodayMedicinesApi, toggleMedicineTakeApi } from "../api/medicineApi";
 
 // Theme & Utils
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
@@ -26,14 +31,40 @@ import MedicineItem from "../components/MedicineItem";
 
 const HomeScreen = ({ navigation }) => {
   const dispatch = useDispatch();
+  const isFocused = useIsFocused();
 
   // UI STATE
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleMonth, setVisibleMonth] = useState(getCurrentMonthYear());
+  const [loading, setLoading] = useState(true);
 
   // REDUX
   const medicines = useSelector((state) => state.intakes?.medicines || []);
   const user = useSelector((state) => state.user || {});
+
+  // -----------------------------------
+  // API: Fetch Data
+  // -----------------------------------
+  const fetchMedicines = async () => {
+    try {
+      setLoading(true);
+      const response = await getTodayMedicinesApi();
+      if (response.success) {
+        // Redux store update
+        dispatch({ type: "SET_MEDICINES", payload: response.today_medicines });
+      }
+    } catch (error) {
+      console.error("Home load error:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchMedicines();
+    }
+  }, [isFocused]);
 
   // CALENDAR DATA
   const days = useMemo(() => getDynamicWeek(new Date()), []);
@@ -46,11 +77,11 @@ const HomeScreen = ({ navigation }) => {
 
   // COMPLETED COUNT
   const completedCount = useMemo(
-    () => medicines.filter((m) => m.completed).length,
+    () => medicines.filter((m) => m.is_taken_today).length,
     [medicines],
   );
 
-  // FLATLIST STABLE CONFIG
+  // FLATLIST CONFIG
   const viewabilityConfig = useRef({
     itemVisiblePercentThreshold: 50,
   }).current;
@@ -64,14 +95,24 @@ const HomeScreen = ({ navigation }) => {
 
   // ACTIONS
   const handleMarkAsDone = useCallback(
-    (id) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      dispatch({ type: "TOGGLE_COMPLETION", payload: id });
+    async (id) => {
+      try {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const response = await toggleMedicineTakeApi(id);
+        
+        if (response.success) {
+          dispatch({ 
+            type: "UPDATE_TAKE_STATUS", 
+            payload: { id, status: response.is_taken_today } 
+          });
+        }
+      } catch (error) {
+        alert("Failed to update status");
+      }
     },
     [dispatch],
   );
 
-  // ✅ FIX 1 — "MedicineDetail" par navigate karo
   const handleEditPress = useCallback(
     (medicine) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -82,24 +123,20 @@ const HomeScreen = ({ navigation }) => {
     [navigation],
   );
 
-  // ✅ FIX 2 — item pass karo, item.id nahi
   const renderMedicine = useCallback(
     ({ item }) => (
       <View style={{ paddingHorizontal: SPACING.l }}>
         <MedicineItem
           name={item.name}
           dose={item.dose}
-          // multiple reminder times support
           time={
             item.reminders?.length > 0
               ? item.reminders.join(", ")
               : item.reminder || "No Time"
           }
-          iconName={item.type}
-          completed={item.completed}
-          // circle click = Mark Done ✅
+          iconName={item.medicine_type || item.type} 
+          completed={item.is_taken_today}
           onPress={() => handleMarkAsDone(item.id)}
-          // full card click = Details / Edit 🔍
           onCardPress={() => handleEditPress(item)}
         />
       </View>
@@ -111,38 +148,50 @@ const HomeScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
-      {/* HEADER */}
       <View style={styles.header}>
         <View>
           <Text style={styles.welcomeText}>
-            {getGreeting()}, {user?.name || "User"}!
+            {getGreeting()}
           </Text>
-          <Text style={styles.subWelcome}>
-            Stay healthy in {user?.location || "India"}
-          </Text>
+          {/* <Text style={styles.subWelcome}>
+            Stay healthy in {user?.location || "Udaipur"}
+          </Text> */}
         </View>
 
         <TouchableOpacity
           style={styles.profileBadge}
           onPress={() => navigation.navigate("Profile")}
         >
-          <Text style={styles.profileLetter}>{user?.profileLetter || "U"}</Text>
+          <Text style={styles.profileLetter}>{user?.name?.charAt(0) || "U"}</Text>
         </TouchableOpacity>
       </View>
 
-      {/* MAIN LIST */}
+      {loading && <ActivityIndicator color={COLORS.primary} style={{ marginBottom: 10 }} />}
+
       <FlatList
         data={filteredMedicines}
         keyExtractor={(item) => item.id}
         renderItem={renderMedicine}
+        refreshing={loading}
+        onRefresh={fetchMedicines}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollPadding}
         ListHeaderComponent={
           <>
-            {/* CALENDAR */}
+            <View style={styles.searchContainer}>
+              <View style={styles.searchBar}>
+                <Feather name="search" size={20} color={COLORS.textSub} />
+                <TextInput
+                  placeholder="Search your medicines..."
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+            </View>
+
             <View style={styles.calendarContainer}>
               <Text style={styles.monthLabel}>{visibleMonth}</Text>
-
               <FlatList
                 data={days}
                 horizontal
@@ -152,16 +201,11 @@ const HomeScreen = ({ navigation }) => {
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
                 renderItem={({ item }) => (
-                  <DateCard
-                    date={item.date}
-                    day={item.day}
-                    active={item.active}
-                  />
+                  <DateCard date={item.date} day={item.day} active={item.active} />
                 )}
               />
             </View>
 
-            {/* TRACKER */}
             <View style={styles.trackerWrapper}>
               <IntakeTracker
                 current={completedCount}
@@ -170,29 +214,20 @@ const HomeScreen = ({ navigation }) => {
               />
             </View>
 
-            {/* SECTION HEADER */}
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Upcoming Doses</Text>
-
               <View style={{ flexDirection: "row", gap: 15 }}>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("ExpiryScanner")}
-                >
-                  <Text style={[styles.seeAll, { color: "#F59E0B" }]}>
-                    Scanner
-                  </Text>
+                <TouchableOpacity onPress={() => navigation.navigate("ExpiryScanner")}>
+                  <Text style={[styles.seeAll, { color: "#F59E0B" }]}>Scanner</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("History")}
-                >
+                <TouchableOpacity onPress={() => navigation.navigate("History")}>
                   <Text style={styles.seeAll}>History</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </>
         }
-        ListEmptyComponent={
+         ListEmptyComponent={
           <View style={styles.emptyState}>
             <MaterialCommunityIcons
               name="pill-off"
@@ -208,7 +243,6 @@ const HomeScreen = ({ navigation }) => {
         }
       />
 
-      {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate("AddMedicine", { mode: "Add" })}
@@ -219,13 +253,8 @@ const HomeScreen = ({ navigation }) => {
   );
 };
 
-export default HomeScreen;
-
-/* ================= STYLES ================= */
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -233,19 +262,8 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.m,
     alignItems: "center",
   },
-
-  welcomeText: {
-    ...FONTS.bold,
-    fontSize: 26,
-    color: COLORS.primaryDark,
-  },
-
-  subWelcome: {
-    ...FONTS.regular,
-    fontSize: 14,
-    color: COLORS.textSub,
-  },
-
+  welcomeText: { ...FONTS.bold, fontSize: 26, color: COLORS.primaryDark },
+  subWelcome: { ...FONTS.regular, fontSize: 14, color: COLORS.textSub },
   profileBadge: {
     width: 48,
     height: 48,
@@ -254,18 +272,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  profileLetter: {
-    ...FONTS.bold,
-    color: COLORS.white,
-    fontSize: 18,
-  },
-
-  searchContainer: {
-    paddingHorizontal: SPACING.l,
-    marginBottom: SPACING.m,
-  },
-
+  profileLetter: { ...FONTS.bold, color: COLORS.white, fontSize: 18 },
+  searchContainer: { paddingHorizontal: SPACING.l, marginBottom: SPACING.m },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -275,18 +283,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     ...SHADOWS.small,
   },
-
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    ...FONTS.regular,
-    fontSize: 15,
-  },
-
-  calendarContainer: {
-    marginTop: SPACING.m,
-  },
-
+  searchInput: { flex: 1, marginLeft: 10, ...FONTS.regular, fontSize: 15 },
+  calendarContainer: { marginTop: SPACING.m },
   monthLabel: {
     ...FONTS.bold,
     fontSize: 16,
@@ -295,16 +293,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textTransform: "uppercase",
   },
-
-  calendarList: {
-    paddingLeft: SPACING.l,
-  },
-
-  trackerWrapper: {
-    alignItems: "center",
-    marginVertical: SPACING.xl,
-  },
-
+  calendarList: { paddingLeft: SPACING.l },
+  trackerWrapper: { alignItems: "center", marginVertical: SPACING.xl },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -312,19 +302,8 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: SPACING.l,
   },
-
-  sectionTitle: {
-    ...FONTS.bold,
-    fontSize: 20,
-    color: COLORS.primaryDark,
-  },
-
-  seeAll: {
-    ...FONTS.medium,
-    color: COLORS.primary,
-    fontSize: 14,
-  },
-
+  sectionTitle: { ...FONTS.bold, fontSize: 20, color: COLORS.primaryDark },
+  seeAll: { ...FONTS.medium, color: COLORS.primary, fontSize: 14 },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -342,11 +321,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSub,
     marginTop: 12,
   },
-
-  scrollPadding: {
-    paddingBottom: 120,
-  },
-
+  scrollPadding: { paddingBottom: 120 },
   fab: {
     position: "absolute",
     bottom: 35,
@@ -357,5 +332,8 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
+    elevation: 5,
   },
 });
+
+export default HomeScreen;
