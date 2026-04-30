@@ -16,6 +16,20 @@ const api = axios.create({
   },
 });
 
+// Load token from storage on app startup
+const loadStoredToken = async () => {
+  try {
+    const token = await AsyncStorage.getItem("token");
+    if (token) {
+      setAuthToken(token);
+    }
+  } catch (e) {
+    console.error("Failed to load token", e);
+  }
+};
+
+loadStoredToken();
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -27,26 +41,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Error formatter
-const formatError = (error) => {
-  if (!error.response) {
-    return {
-      message: "Network error. Check your internet connection.",
-      status: 0,
-      detail: null,
-    };
-  }
-
-  return {
-    message:
-      error.response.data?.message ||
-      error.message ||
-      "Something went wrong",
-    status: error.response.status,
-    detail: error.response.data?.detail || null,
-  };
-};
-
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
@@ -57,21 +51,13 @@ api.interceptors.response.use(
       console.log("Session expired");
     }
 
-    return Promise.reject(formatError(error));
+    const formattedError = {
+      message: error.response?.data?.message || error.message || "Something went wrong",
+      status: error.response?.status || 0,
+      detail: error.response?.data?.detail || null,
+    };
+    return Promise.reject(formattedError);
   }
 );
-
-// DEV logging
-if (__DEV__) {
-  api.interceptors.request.use((req) => {
-    console.log("➡️", req.method?.toUpperCase(), req.url);
-    return req;
-  });
-
-  api.interceptors.response.use((res) => {
-    console.log("✅", res.config.url);
-    return res;
-  });
-}
 
 export default api;

@@ -1,117 +1,159 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { getAllUserMedicines, deleteMedicine } from '../api/medicineApi'; // API functions
-import { COLORS, FONTS, SHADOWS, SPACING } from '../constants/theme';
-import CustomText from '../components/CustomText';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  StatusBar,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { getAllMedicinesApi } from "../api/medicineApi";
+import { COLORS, SHADOWS } from "../constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 const AllMedicinesScreen = () => {
-    const navigation = useNavigation();
-    const [medicines, setMedicines] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
+  const [medicines, setMedicines] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    // Backend se saari medicines load karne ka function[cite: 8, 13]
-    const loadAllMedicines = async () => {
-        try {
-            setLoading(true);
-            const res = await getAllUserMedicines(); 
-            if (res && res.success) {
-                setMedicines(res.medicines); // Backend key 'medicines' hai
-            }
-        } catch (error) {
-            console.error("Fetch Error:", error);
-            Alert.alert("Error", "Medicines load nahi ho payi.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await getAllMedicinesApi();
 
-    // Screen focus hone par data refresh karein
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
-            loadAllMedicines();
-        });
-        return unsubscribe;
-    }, [navigation]);
+      // Use optional chaining and a fallback to an empty array
+      const data = res?.medicines || res;
 
-    const handleDelete = (id) => {
-        Alert.alert("Delete", "Kya aap ise permanent delete karna chahte hain?", [
-            { text: "Cancel", style: "cancel" },
-            { 
-                text: "Delete", 
-                style: "destructive", 
-                onPress: async () => {
-                    const res = await deleteMedicine(id); // Delete API call[cite: 8]
-                    if(res.success) loadAllMedicines();
-                } 
-            }
-        ]);
-    };
+      // Ensure the state is only set if data is actually an array
+      setMedicines(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+      // Fallback to empty array on error to prevent the 'map' crash
+      setMedicines([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (loading) return <ActivityIndicator size="large" color={COLORS.primary} style={styles.loader} />;
+  useEffect(() => {
+    // Automatically refreshes the list when navigating back to this screen
+    return navigation.addListener("focus", loadData);
+  }, [navigation]);
 
-    return (
-        <View style={styles.container}>
-            <FlatList
-                data={medicines}
-                keyExtractor={(item) => item.id} // Backend serializer 'id' bhejta hai[cite: 6]
-                ListEmptyComponent={<CustomText style={styles.empty}>No medicines found.</CustomText>}
-                renderItem={({ item }) => (
-                    <View style={[styles.card, SHADOWS.small]}>
-                        <View style={styles.info}>
-                            <CustomText style={styles.medName}>{item.name}</CustomText>
-                            <Text style={styles.subText}>{item.type} • {item.dose}</Text>
-                            
-                            {/* Expiry Alert Logic (5 din pehle) */}
-                            {item.expiry_alert && (
-                                <Text style={styles.alertText}>⚠️ Expiring in {item.days_until_expiry} days!</Text>
-                            )}
-                        </View>
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      style={[styles.card, SHADOWS.medium]}
+      // Opens the update/detail screen for the selected medicine[cite: 1]
+      onPress={() => navigation.navigate("MedicineDetail", { medicine: item })}
+    >
+      {/* Left Status Bar: Red for expiry alerts, Green for normal status */}
+      <View
+        style={[
+          styles.statusDot,
+          { backgroundColor: item.expiry_alert ? "#FF5252" : "#4CAF50" },
+        ]}
+      />
 
-                        <View style={styles.actions}>
-                            {/* Edit Button: AddMedicineScreen par data bhej raha hai[cite: 1, 8] */}
-                            <TouchableOpacity 
-                                style={styles.editBtn}
-                                onPress={() => navigation.navigate('AddMedicine', { medicine: item })}
-                            >
-                                <Text style={styles.btnText}>Edit</Text>
-                            </TouchableOpacity>
-                            
-                            <TouchableOpacity 
-                                style={styles.deleteBtn}
-                                onPress={() => handleDelete(item.id)}
-                            >
-                                <Text style={styles.btnText}>X</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )}
-            />
+      <View style={styles.cardContent}>
+        <Text style={styles.medName}>{item.name}</Text>
+        <Text style={styles.medDetails}>
+          {item.type} • {item.dose}
+        </Text>
+
+        {item.expiry_alert && (
+          <View style={styles.alertPill}>
+            <Ionicons name="time-outline" size={12} color="#D32F2F" />
+            <Text style={styles.alertText}>
+              Expires in {item.days_until_expiry}d
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.actionColumn}>
+        <Ionicons name="chevron-forward" size={22} color="#BDC3C7" />
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+
+      {/* Simplified Header: Only shows the title and count */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.title}>Medicine Cabinet</Text>
+          <Text style={styles.subtitle}>{medicines.length} Items Listed</Text>
         </View>
-    );
+      </View>
+
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={COLORS.primary}
+          style={styles.loader}
+        />
+      ) : (
+        <FlatList
+          data={medicines}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listBody}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <Text style={styles.empty}>No medicines found.</Text>
+          }
+        />
+      )}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: COLORS.background, padding: 15 },
-    loader: { flex: 1, justifyContent: 'center' },
-    header: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, color: COLORS.primaryDark },
-    empty: { textAlign: 'center', marginTop: 50, color: COLORS.textSub },
-    card: { 
-        padding: 15, 
-        backgroundColor: COLORS.white, 
-        marginBottom: 12, 
-        borderRadius: 15, 
-        flexDirection: 'row', 
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    medName: { fontSize: 18, fontWeight: '700', color: COLORS.primaryDark },
-    subText: { color: COLORS.textSub, marginTop: 4 },
-    alertText: { color: COLORS.error, fontWeight: 'bold', marginTop: 5, fontSize: 12 },
-    actions: { flexDirection: 'row' },
-    editBtn: { backgroundColor: COLORS.secondary, padding: 8, borderRadius: 8, marginRight: 8 },
-    deleteBtn: { backgroundColor: COLORS.error, padding: 8, borderRadius: 8 },
-    btnText: { color: COLORS.white, fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: "#F8F9FA" },
+  loader: { marginTop: 50 },
+  header: {
+    paddingHorizontal: 25,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  title: { fontSize: 28, fontWeight: "800", color: "#1A1A1A" },
+  subtitle: { fontSize: 15, color: "#777", marginTop: 4 },
+  listBody: { paddingHorizontal: 25, paddingBottom: 40 },
+  card: {
+    backgroundColor: "#FFF",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  statusDot: { width: 6, height: 40, borderRadius: 3 },
+  cardContent: { flex: 1, marginLeft: 15 },
+  medName: { fontSize: 18, fontWeight: "700", color: "#2D3436" },
+  medDetails: { fontSize: 14, color: "#888", marginTop: 4 },
+  alertPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF1F1",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  alertText: {
+    color: "#D32F2F",
+    fontSize: 11,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
+  actionColumn: { justifyContent: "center" },
+  empty: { textAlign: "center", marginTop: 100, color: "#999", fontSize: 16 },
 });
 
 export default AllMedicinesScreen;
