@@ -1,17 +1,24 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
 import { COLORS, FONTS, SPACING, SHADOWS } from "../constants/theme";
 
 import ProfileStats from "../components/ProfileStats";
 import ProfileOption from "../components/ProfileOption";
-// Import remains the same
 import { getCurrentUserApi, logoutUserApi } from "../api/authApi";
 
 const ProfileScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user);
+  // Redux se medicines ki total counting ke liye
   const medicines = useSelector((state) => state.intakes.medicines || []);
 
   useEffect(() => {
@@ -20,40 +27,30 @@ const ProfileScreen = ({ navigation }) => {
 
   const fetchProfile = async () => {
     try {
-      // FIX: Changed getMeApi to getCurrentUserApi to match your import
       const response = await getCurrentUserApi();
-
-      // Based on your previous API structure, we check for the direct object 
-      // or response.user depending on how your backend returns it
-      if (response) {
+      // Backend response check: success aur user object[cite: 7, 12]
+      if (response && response.success) {
         dispatch({
           type: "UPDATE_PROFILE",
-          payload: response.user || response,
+          payload: response.user,
         });
       }
     } catch (error) {
-      console.log(
-        "Profile Fetch Error:",
-        error?.message || "Could not load profile"
-      );
+      console.log("Profile Fetch Error:", error?.message);
     }
   };
 
   const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
+    Alert.alert("Logout", "Kya aap logout karna chahte hain?", [
+      { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
         style: "destructive",
         onPress: async () => {
           try {
             await logoutUserApi();
-
             dispatch({ type: "LOGOUT" });
-
+            // Login screen par reset[cite: 14]
             navigation.reset({
               index: 0,
               routes: [{ name: "Login" }],
@@ -69,37 +66,48 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Profile Header */}
         <View style={styles.header}>
           <View style={[styles.avatar, SHADOWS.medium]}>
+            {/* Backend profileLetter (e.g., 'C' for Chitresh) */}
             <Text style={styles.avatarText}>{user?.profileLetter || "U"}</Text>
           </View>
-
           <Text style={styles.userName}>{user?.name || "User"}</Text>
-         
         </View>
 
+        {/* Stats Section */}
         <View style={styles.statsContainer}>
-          <ProfileStats label="Medicines" value={medicines.length} />
-
+          <ProfileStats label="Total Meds" value={medicines.length} />
           <View style={styles.divider} />
-
-          {/* FIX: Corrected typo from 'Pr ofileStats' to 'ProfileStats' */}
           <ProfileStats label="Streak" value={`${user?.streak || 0} Days`} />
         </View>
 
+        {/* Options Section */}
         <View style={styles.optionsWrapper}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
+          <Text style={styles.sectionTitle}>Medical Records</Text>
+
+          {/* New Screen Link: All Medicines View[cite: 14] */}
+          {/* <ProfileOption
+            icon="medical-bag"
+            label="View All My Medicines"
+            onPress={() => navigation.navigate("AllMedicines")}
+          /> */}
+
+          {/* History screen (Completed aur Expired medicines) ke liye */}
+          <ProfileOption
+            icon="history"
+            label="Medicines History"
+            onPress={() => navigation.navigate("History")}
+          />
+
+          <Text style={[styles.sectionTitle, { marginTop: SPACING.l }]}>
+            Account Settings
+          </Text>
 
           <ProfileOption
             icon="account-edit-outline"
             label="Update Profile"
             onPress={() => navigation.navigate("UpdateProfile")}
-          />
-
-          <ProfileOption
-            icon="bell-outline"
-            label="Notifications"
-            onPress={() => console.log("Notifications toggled")}
           />
 
           <ProfileOption
@@ -154,11 +162,6 @@ const styles = StyleSheet.create({
     ...FONTS.bold,
     fontSize: 24,
     color: COLORS.primaryDark,
-  },
-  userEmail: {
-    ...FONTS.regular,
-    fontSize: 14,
-    color: COLORS.textSub,
   },
   statsContainer: {
     flexDirection: "row",

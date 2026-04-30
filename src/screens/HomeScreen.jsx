@@ -1,4 +1,10 @@
-import React, { useMemo, useCallback, useState, useRef, useEffect } from "react";
+import React, {
+  useMemo,
+  useCallback,
+  useState,
+  useRef,
+  useEffect,
+} from "react";
 import {
   StyleSheet,
   View,
@@ -17,7 +23,10 @@ import { useIsFocused } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 
 // API Import
-import { getTodayMedicinesApi, toggleMedicineTakeApi } from "../api/medicineApi";
+import {
+  getTodayMedicinesApi,
+  toggleMedicineTakeApi,
+} from "../api/medicineApi";
 
 // Theme & Utils
 import { COLORS, SPACING, FONTS, SHADOWS } from "../constants/theme";
@@ -99,11 +108,11 @@ const HomeScreen = ({ navigation }) => {
       try {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const response = await toggleMedicineTakeApi(id);
-        
+
         if (response.success) {
-          dispatch({ 
-            type: "UPDATE_TAKE_STATUS", 
-            payload: { id, status: response.is_taken_today } 
+          dispatch({
+            type: "UPDATE_TAKE_STATUS",
+            payload: { id, status: response.is_taken_today },
           });
         }
       } catch (error) {
@@ -134,7 +143,7 @@ const HomeScreen = ({ navigation }) => {
               ? item.reminders.join(", ")
               : item.reminder || "No Time"
           }
-          iconName={item.medicine_type || item.type} 
+          iconName={item.medicine_type || item.type}
           completed={item.is_taken_today}
           onPress={() => handleMarkAsDone(item.id)}
           onCardPress={() => handleEditPress(item)}
@@ -150,9 +159,7 @@ const HomeScreen = ({ navigation }) => {
 
       <View style={styles.header}>
         <View>
-          <Text style={styles.welcomeText}>
-            {getGreeting()}
-          </Text>
+          <Text style={styles.welcomeText}>{getGreeting()}</Text>
           {/* <Text style={styles.subWelcome}>
             Stay healthy in {user?.location || "Udaipur"}
           </Text> */}
@@ -162,11 +169,18 @@ const HomeScreen = ({ navigation }) => {
           style={styles.profileBadge}
           onPress={() => navigation.navigate("Profile")}
         >
-          <Text style={styles.profileLetter}>{user?.name?.charAt(0) || "U"}</Text>
+          <Text style={styles.profileLetter}>
+            {user?.name?.charAt(0) || "U"}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {loading && <ActivityIndicator color={COLORS.primary} style={{ marginBottom: 10 }} />}
+      {loading && (
+        <ActivityIndicator
+          color={COLORS.primary}
+          style={{ marginBottom: 10 }}
+        />
+      )}
 
       <FlatList
         data={filteredMedicines}
@@ -178,7 +192,7 @@ const HomeScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollPadding}
         ListHeaderComponent={
           <>
-            <View style={styles.searchContainer}>
+            {/* <View style={styles.searchContainer}>
               <View style={styles.searchBar}>
                 <Feather name="search" size={20} color={COLORS.textSub} />
                 <TextInput
@@ -188,7 +202,7 @@ const HomeScreen = ({ navigation }) => {
                   onChangeText={setSearchQuery}
                 />
               </View>
-            </View>
+            </View> */}
 
             <View style={styles.calendarContainer}>
               <Text style={styles.monthLabel}>{visibleMonth}</Text>
@@ -201,7 +215,11 @@ const HomeScreen = ({ navigation }) => {
                 onViewableItemsChanged={onViewableItemsChanged}
                 viewabilityConfig={viewabilityConfig}
                 renderItem={({ item }) => (
-                  <DateCard date={item.date} day={item.day} active={item.active} />
+                  <DateCard
+                    date={item.date}
+                    day={item.day}
+                    active={item.active}
+                  />
                 )}
               />
             </View>
@@ -217,17 +235,28 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Upcoming Doses</Text>
               <View style={{ flexDirection: "row", gap: 15 }}>
-                <TouchableOpacity onPress={() => navigation.navigate("ExpiryScanner")}>
+                {/* <TouchableOpacity onPress={() => navigation.navigate("ExpiryScanner")}>
                   <Text style={[styles.seeAll, { color: "#F59E0B" }]}>Scanner</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => navigation.navigate("History")}>
+                </TouchableOpacity> */}
+                {/* <TouchableOpacity onPress={() => navigation.navigate("History")}>
                   <Text style={styles.seeAll}>History</Text>
+                </TouchableOpacity> */}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("AllMedicines")}
+                  style={{ padding: 5 }}
+                >
+                  {/* Icon library ka use karke yahan icon dikhayein */}
+                  <MaterialCommunityIcons
+                    name="medical-bag"
+                    size={28}
+                    color={COLORS.primary}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
           </>
         }
-         ListEmptyComponent={
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <MaterialCommunityIcons
               name="pill-off"

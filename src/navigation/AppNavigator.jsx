@@ -14,7 +14,8 @@ import HistoryScreen from "../screens/HistoryScreen";
 import ExpiryScannerScreen from "../screens/ExpiryScannerScreen";
 import MedicineDetailScreen from "../screens/MedicineDetailScreen";
 import { COLORS, FONTS } from "../constants/theme";
-import PrivacyScreen from '../components/PrivacyScreen';
+import PrivacyScreen from "../components/PrivacyScreen";
+import AllMedicinesScreen from "../screens/AllMedicinesScreen";
 
 const Stack = createStackNavigator();
 
@@ -69,6 +70,11 @@ const AppNavigator = () => (
     <Stack.Screen name="History" component={HistoryScreen} />
     <Stack.Screen name="ExpiryScanner" component={ExpiryScannerScreen} />
     <Stack.Screen name="MedicineDetail" component={MedicineDetailScreen} />
+    <Stack.Screen
+      name="AllMedicines"
+      component={AllMedicinesScreen}
+      options={{ title: "My All Medicines" }}
+    />
   </Stack.Navigator>
 );
 

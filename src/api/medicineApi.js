@@ -1,47 +1,47 @@
-import api from "../api/apiCleient";
+import api from "./apiClient";
+
+// 🔁 Common Handler
+const handleRequest = async (request) => {
+  try {
+    const res = await request;
+    return res.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
 
 /**
- * MEDICINES API
+ * 📌 MEDICINES API
  */
 
-// TODAY MEDICINES
-export const getTodayMedicinesApi = async () => {
-  const res = await api.get("/medicines/today");
-  return res.data;
-};
+// ✅ Get today's medicines
+export const getTodayMedicinesApi = () =>
+  handleRequest(api.get("/medicines/today"));
 
-// ADD MEDICINE
-export const addMedicineApi = async (data) => {
-  const res = await api.post("/medicines/", data);
-  return res.data;
-};
+// ✅ Add new medicine
+export const addMedicineApi = (data) =>
+  handleRequest(api.post("/medicines", data));
 
-// TOGGLE TAKE
-export const toggleMedicineTakeApi = async (id) => {
-  const res = await api.patch(`/medicines/${id}/take`);
-  return res.data;
-};
+// ✅ Toggle medicine taken/not taken
+export const toggleMedicineTakeApi = (id) =>
+  handleRequest(api.patch(`/medicines/${id}/take`));
 
-// HISTORY
-export const getHistoryApi = async () => {
-  const res = await api.get("/medicines/history");
-  return res.data;
-};
+// ✅ Get history
+export const getHistoryApi = () =>
+  handleRequest(api.get("/medicines/history"));
 
-// ALL MEDICINES
-export const getAllMedicinesApi = async () => {
-  const res = await api.get("/medicines/");
-  return res.data;
-};
+// ✅ Get all medicines
+export const getAllMedicinesApi = () =>
+  handleRequest(api.get("/medicines"));
 
-// SINGLE MEDICINE
-export const getSingleMedicineApi = async (id) => {
-  const res = await api.get(`/medicines/${id}`);
-  return res.data;
-};
+// ✅ Get single medicine
+export const getSingleMedicineApi = (id) =>
+  handleRequest(api.get(`/medicines/${id}`));
 
-// DELETE MEDICINE
-export const deleteMedicineApi = async (id) => {
-  const res = await api.delete(`/medicines/${id}`);
-  return res.data;
-};
+// ✅ Update medicine
+export const updateMedicineApi = (id, data) =>
+  handleRequest(api.put(`/medicines/${id}`, data));
+
+// ✅ Delete medicine
+export const deleteMedicineApi = (id) =>
+  handleRequest(api.delete(`/medicines/${id}`));
